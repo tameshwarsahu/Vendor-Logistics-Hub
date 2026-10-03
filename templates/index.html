@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Logistics & Multi-Vendor Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l5 5v9a2 2 0 0 1-2 2Z"/><path d="M3 8v10a2 2 0 0 0 2 2h10"/></svg>
+                <span>Vendor & Logistics Hub</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-link active" onclick="switchView('tracking', event)">Live GPS Map Tracking</a>
+                <a href="#" class="nav-link" onclick="switchView('vendors', event)">Vendor Directory</a>
+                <a href="#" class="nav-link" onclick="switchView('partners', event)">Delivery Partners</a>
+                <a href="#" class="nav-link" onclick="switchView('dues', event)">Vendor Payments</a>
+                <a href="#" class="nav-link" onclick="switchView('qrscanner', event)">QR Box Scanner</a>
+                <a href="#" class="nav-link" onclick="switchView('notifications', event)">Dispatch Alerts</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            
+            <!-- VIEW 1: LIVE GPS MAP TRACKER -->
+            <section id="view-tracking" class="page-view active">
+                <header class="top-header">
+                    <h1>Real-Time GPS Parcel Tracker</h1>
+                    <p class="subtitle">Live interactive OpenStreetMap view with active shipment locations</p>
+                </header>
+                <div class="card">
+                    <div id="map" style="height: 440px; width: 100%; border-radius: 8px;"></div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: VENDOR MANAGEMENT & PROFILES -->
+            <section id="view-vendors" class="page-view">
+                <header class="top-header">
+                    <h1>Vendor Profile Management</h1>
+                    <p class="subtitle">Register new vendors with detailed records and manage database</p>
+                </header>
+
+                <div class="card">
+                    <h2>➕ Register New Vendor (Detailed)</h2>
+                    <form id="addVendorForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Company / Vendor Name *</label>
+                                <input type="text" id="vName" placeholder="e.g. Apex Packaging Ltd" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Contact Person *</label>
+                                <input type="text" id="vContact" placeholder="e.g. Rahul Sharma" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Email Address *</label>
+                                <input type="email" id="vEmail" placeholder="vendor@apex.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number *</label>
+                                <input type="text" id="vPhone" placeholder="+919876543210" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Category</label>
+                                <input type="text" id="vCategory" placeholder="e.g. Raw Material, Shipping">
+                            </div>
+                            <div class="form-group">
+                                <label>GSTIN Number</label>
+                                <input type="text" id="vGstin" placeholder="e.g. 22AAAAA0000A1Z5">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:1rem;">
+                            <label>Office / Hub Address</label>
+                            <input type="text" id="vAddress" placeholder="e.g. Plot 42, Industrial Area, Raipur">
+                        </div>
+                        <button type="submit" class="btn btn-primary">+ Save Vendor Profile</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Registered Vendors List</h2>
+                        <input type="text" id="vendorSearchInput" placeholder="🔍 Search vendor..." onkeyup="filterVendorTable()" style="width: 250px;">
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Company</th>
+                                    <th>Contact</th>
+                                    <th>Phone / Email</th>
+                                    <th>GSTIN</th>
+                                    <th>Address</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vendorListTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 3: DELIVERY PARTNERS -->
+            <section id="view-partners" class="page-view">
+                <header class="top-header">
+                    <h1>Delivery Partner & Courier Management</h1>
+                    <p class="subtitle">Manage logistics companies, vehicle numbers, and drivers</p>
+                </header>
+
+                <div class="card">
+                    <h2>🚚 Register Delivery Partner / Transporter</h2>
+                    <form id="addPartnerForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Courier / Logistics Company *</label>
+                                <input type="text" id="dpCompany" placeholder="e.g. Blue Dart Express" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Driver / Agent Name *</label>
+                                <input type="text" id="dpDriver" placeholder="e.g. Ramesh Kumar" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Driver Phone Number *</label>
+                                <input type="text" id="dpPhone" placeholder="+919123456789" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Vehicle Number *</label>
+                                <input type="text" id="dpVehicle" placeholder="CG-07-AB-1234" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">+ Add Delivery Partner</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2>Active Delivery Partners Directory</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Company</th>
+                                    <th>Driver Name</th>
+                                    <th>Phone</th>
+                                    <th>Vehicle No.</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partnerTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 4: OUTSTANDING PAYMENTS & AUTOMATIC CLEARANCE -->
+            <section id="view-dues" class="page-view">
+                <header class="top-header">
+                    <h1>Outstanding Vendor Payments & Receipts</h1>
+                    <p class="subtitle">Settlement gateway, automatic dues clearance, and PDF receipts</p>
+                </header>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Pending Vendor Invoices</h2>
+                        <button class="btn btn-secondary" onclick="exportToCSV('dues')">📥 Export Dues to Excel</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Invoice Bill No.</th>
+                                    <th>Vendor Name</th>
+                                    <th>Total Amount</th>
+                                    <th>Remaining Due</th>
+                                    <th>Status</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="duesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 5: QR CODE SCANNER -->
+            <section id="view-qrscanner" class="page-view">
+                <header class="top-header">
+                    <h1>QR Code Box Labeling & Camera Scanner</h1>
+                    <p class="subtitle">Generate printable labels and scan via webcam</p>
+                </header>
+                <div class="card">
+                    <h2>Generate Box QR Label</h2>
+                    <div class="form-row">
+                        <input type="text" id="qrTrackInput" placeholder="Enter Tracking ID (e.g. TRK-1001)">
+                        <button class="btn btn-primary" onclick="displayQRCode()">Generate QR</button>
+                    </div>
+                    <div id="qrDisplayContainer" style="display: none; text-align: center; margin-top: 1rem;">
+                        <img id="qrImage" src="" alt="QR Label" style="border: 2px dashed #ccc; padding: 10px; border-radius: 8px;">
+                    </div>
+                    <hr style="margin: 2rem 0; border: 0; border-top: 1px solid #e2e8f0;">
+                    <h2>Scan QR Code Box via Camera</h2>
+                    <button class="btn btn-primary" onclick="startCameraScanner()">Start Webcam Scanner</button>
+                    <button class="btn btn-delete" id="stopScanBtn" onclick="stopCameraScanner()" style="display: none;">Stop Camera</button>
+                    <div style="margin-top: 1rem; text-align: center;">
+                        <video id="webcamVideo" style="width: 100%; max-width: 400px; display: none; border: 2px solid #2563eb; border-radius: 8px;"></video>
+                        <canvas id="qrCanvas" hidden></canvas>
+                        <p id="scannedResult" style="font-weight: bold; font-size: 1.1rem; color: #059669; margin-top: 0.5rem;"></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 6: DISPATCH ALERTS -->
+            <section id="view-notifications" class="page-view">
+                <header class="top-header">
+                    <h1>Dispatch Alerts & SMS / WhatsApp</h1>
+                    <p class="subtitle">Automated status notifications via Twilio API</p>
+                </header>
+                <div class="card">
+                    <form id="notifyForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tracking ID *</label>
+                                <input type="text" id="notifyTrackId" placeholder="TRK-1001" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Recipient Phone Number (with Country Code) *</label>
+                                <input type="text" id="notifyPhone" placeholder="+919876543210" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Update Parcel Status</label>
+                                <select id="notifyStatus">
+                                    <option value="Dispatched">Dispatched</option>
+                                    <option value="In-Transit">In-Transit</option>
+                                    <option value="Out for Delivery">Out for Delivery</option>
+                                    <option value="Delivered">Delivered</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Dispatch Channel</label>
+                                <select id="notifyChannel">
+                                    <option value="both">WhatsApp & SMS</option>
+                                    <option value="whatsapp">WhatsApp Only</option>
+                                    <option value="sms">SMS Only</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Live Alert</button>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- PAYMENT SETTLEMENT MODAL -->
+    <div id="paymentModal" class="modal" style="display:none;">
+        <div class="modal-content card">
+            <h3>Process Payment Settlement</h3>
+            <p>Invoice Bill: <strong id="modalBillNo"></strong></p>
+            <p>Vendor: <strong id="modalVendor"></strong></p>
+            <p>Remaining Balance: ₹<strong id="modalDueAmount"></strong></p>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Amount to Pay (INR)</label>
+                <input type="number" id="payInputAmount">
+            </div>
+            <div class="form-group">
+                <label>Payment Method</label>
+                <select id="payMethod">
+                    <option value="UPI / QR Code">UPI / QR Code</option>
+                    <option value="Credit/Debit Card">Credit/Debit Card</option>
+                    <option value="Net Banking">Net Banking</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button class="btn btn-primary" onclick="submitPayment()">Confirm & Clear Dues</button>
+                <button class="btn btn-delete" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI CHATBOT FLOATING WIDGET -->
+    <div class="ai-widget-container">
+        <button class="ai-toggle-btn" onclick="toggleAIChat()">🤖 AI Assistant</button>
+        <div id="aiChatWindow" class="ai-chat-box" style="display: none;">
+            <div class="ai-chat-header">
+                <span>Supply Chain AI</span>
+                <button onclick="toggleAIChat()">✕</button>
+            </div>
+            <div id="aiChatMessages" class="ai-chat-messages">
+                <div class="ai-msg bot">Hello! Ask me about pending dues, parcel tracking, or delivery partners.</div>
+            </div>
+            <div class="ai-chat-input">
+                <input type="text" id="aiInputText" placeholder="Ask AI..." onkeypress="if(event.key==='Enter') sendAIMessage()">
+                <button onclick="sendAIMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
